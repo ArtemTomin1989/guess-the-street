@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гра: Вгадай вулицю</title>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 10px auto;
+            padding: 10px;
+            font-size: 2em;
+            font-style: italic;
+            background: linear-gradient(90deg, #ff7e5f, #feb47b);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 50%;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            height: calc(100% - 70px);
+        }
+
+        .image-container {
+            flex: 1;
+            padding: 5px;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .map-container {
+            flex: 1;
+            padding: 5px;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        .submit-button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin: 10px auto;
+            display: block;
+            transition: background-color 0.3s ease;
+        }
+
+        .submit-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Вкажіть, де знаходиться: {{ location.name }}</h1>
+    <div class="container">
+        <div class="image-container">
+            <img src="/static/images/{{ location.image }}" alt="{{ location.name }}">
+        </div>
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+    <button class="submit-button" onclick="submitLocation()">Відправити</button>
+    <script>
+        const locationName = "{{ location.name }}";
+        let map = L.map('map').setView([50.4501, 30.5234], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Карта OpenStreetMap'
+        }).addTo(map);
+
+        let clickedLatLng;
+        map.on('click', function(e) {
+            clickedLatLng = e.latlng;
+            L.marker(e.latlng).addTo(map).bindPopup("Ви вибрали це місце").openPopup();
+        });
+
+        function submitLocation() {
+            if (!clickedLatLng) {
+                alert("Будь ласка, виберіть місце на мапі!");
+                return;
+            }
+            fetch('/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lat: clickedLatLng.lat,
+                    lon: clickedLatLng.lng,
+                    location_name: locationName,
+                    player_name: prompt("Введіть своє ім'я:"),
+                    time_taken: Math.random() * 60
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message + ` Ваш рахунок: ${data.score}`);
+                window.location.href = '/results';
+            });
+        }
+    </script>
+</body>
+</html>
